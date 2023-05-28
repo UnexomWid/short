@@ -5,7 +5,7 @@
 # Usage
 
 ```sh
-cargo install
+cargo install --path .
 
 ./short
 
