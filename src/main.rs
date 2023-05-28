@@ -49,6 +49,11 @@ fn main() {
     for file in files {
         if let Ok(file) = file {
             let file_path = file.path();
+
+            if !file_path.is_file() {
+                continue;
+            }
+
             let extension = file_path.extension().unwrap_or_default().to_str().unwrap().to_lowercase();
 
             if file_path.file_name().unwrap() == "short.json" {
