@@ -8,9 +8,13 @@
 cargo install
 
 ./short
+
+# You can also run it like this to change the working dir,
+# but the config file must be in the current process WD!
+./short <dir>
 ```
 
-Short generates a default JSON config file which you can modify.
+Short generates a default JSON config file `short.json` which you can modify.
 
 You can create categories based on file extensions and names.
 
