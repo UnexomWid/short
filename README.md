@@ -32,7 +32,7 @@ You can create categories based on file extensions and names.
             "extensions": ["cpp", "cxx"],
             "filenames": ["CMakeLists.txt"] 
         }
-    }
+    },
 
     // If a file doesn't fit any category given in this config (i.e. is uncategorized), don't move it anywhere;
     // This must be false for the options below to take effect
