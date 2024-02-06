@@ -36,7 +36,8 @@ You can create categories based on file extensions and names.
         }
     },
 
-    // If an unsorted file is moved, but a file with the same name already exists in the destination, overwrite it
+    // If an unsorted file is moved, but a file with the same name already exists in the destination,
+    // then overwrite it;
     // If this is false, short will append numbers to the file name to solve the conflict
     "auto_overwrite": false,
 
