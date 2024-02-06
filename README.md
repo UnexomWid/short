@@ -45,7 +45,8 @@ You can create categories based on file extensions and names.
     // This must be false for the options below to take effect
     "ignore_uncategorized": false,
 
-    // If a file is uncategorized, move it to <working_dir>/<uncategorized_dir>/<ext> where <ext> is the file extension;
+    // If a file is uncategorized, move it to <working_dir>/<uncategorized_dir>/<ext>
+    // where <ext> is the file extension;
     // otherwise, move to <working_dir>/<uncategorized_dir>
     "sort_uncategoriezd_by_ext": true,
 
