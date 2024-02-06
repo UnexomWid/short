@@ -12,6 +12,7 @@ struct Category {
 
 #[derive(Deserialize)]
 struct Config {
+    auto_overwrite: bool,
     ignore_uncategorized: bool,
     sort_uncategoriezd_by_ext: bool,
     uncategorized_dir: String,
@@ -20,14 +21,19 @@ struct Config {
 }
 
 fn main() {
-    let config_path = env::current_dir().unwrap().join("short.json");
+    let args: Vec<String> = env::args().collect();
+
+    let current_dir = if args.len() == 2 { &args[1] } else { "." };
+
+    let config_path = Path::new(current_dir).join("short.json");
 
     if !config_path.exists() {
-        print!("Creating default config short.json");
+        println!("Creating default config short.json in {}", current_dir);
 
         fs::write(
             &config_path,
             r#"{
+    "auto_overwrite": false,
     "ignore_uncategorized": false,
     "sort_uncategoriezd_by_ext": true,
     "uncategorized_dir": "",
@@ -42,11 +48,7 @@ fn main() {
         .expect("Cannot read short.json (maybe the file doesn't exist?)");
     let config: Config = serde_json::from_str(&config_file).expect("File short.json is invalid");
 
-    let args: Vec<String> = env::args().collect();
-
-    let current_dir = if args.len() == 2 { &args[1] } else { "." };
-
-    let files = fs::read_dir(&current_dir).expect("Cannot read CWD (insufficient permissions?)");
+    let files = fs::read_dir(current_dir).expect("Cannot read CWD (insufficient permissions?)");
 
     for file in files {
         let file = file.unwrap();
@@ -70,34 +72,41 @@ fn main() {
 
         if let Some(cat) = get_category(&config, &extension, &file_path) {
             // Categorized
-            move_file(&file_path, &current_dir, &cat);
+            move_file(&file_path, current_dir, cat, config.auto_overwrite);
         } else if !config.ignore_uncategorized {
             if config.sort_uncategoriezd_by_ext {
-                if extension != "" {
+                if !extension.is_empty() {
                     // Uncategorized: move to the uncategorized dir
                     move_file(
                         &file_path,
-                        &current_dir,
+                        current_dir,
                         Path::new(&config.uncategorized_dir)
                             .join(&extension)
                             .as_os_str()
                             .to_str()
                             .unwrap(),
+                        config.auto_overwrite,
                     );
                 } else {
                     // Uncategorized, no extension: move to the 'no extension' dir
                     move_file(
                         &file_path,
-                        &current_dir,
+                        current_dir,
                         Path::new(&config.uncategorized_dir)
                             .join(&config.no_extension_dir)
                             .as_os_str()
                             .to_str()
                             .unwrap(),
+                        config.auto_overwrite,
                     );
                 }
             } else {
-                move_file(&file_path, &current_dir, &config.uncategorized_dir);
+                move_file(
+                    &file_path,
+                    current_dir,
+                    &config.uncategorized_dir,
+                    config.auto_overwrite,
+                );
             }
         }
     }
@@ -128,20 +137,47 @@ fn get_category<'config>(
     None
 }
 
-fn move_file(file: &Path, current_dir: &str, subdir: &str) {
+fn move_file(file: &Path, current_dir: &str, subdir: &str, overwrite: bool) {
     let dir = Path::new(current_dir).join(subdir);
 
     if !dir.exists() {
-        fs::create_dir_all(&dir).expect(&format!(
-            "Cannot create directory {:?} (maybe it contains illegal characters?)",
-            subdir
-        ));
+        fs::create_dir_all(&dir).unwrap_or_else(|_| {
+            panic!(
+                "Cannot create directory {:?} (maybe it contains illegal characters?)",
+                subdir
+            )
+        });
     }
 
-    let new_file = dir.join(file.file_name().unwrap());
-    fs::rename(file, &new_file).expect(&format!(
-        "Cannot move file {:?} to directory {:?}",
-        file.file_name().unwrap(),
-        new_file.as_os_str()
-    ))
+    let mut new_file = dir.join(file.file_name().unwrap());
+
+    if !overwrite {
+        // Max files in a dir:
+        // Fat32 - u16::MAX
+        // NTFS  - u32::MAX
+        // ext4  - u32::MAX
+        // exFAT - 2,796,202
+        //
+        // Use u64 so at some point we will get a non-existent filename
+        let mut retry = 0u64;
+
+        while new_file.exists() {
+            let mut filename = file.file_stem().unwrap().to_os_string();
+
+            filename.push(format!("_{}.", retry));
+            filename.push(file.extension().unwrap_or_default());
+
+            retry += 1;
+
+            new_file = dir.join(filename);
+        }
+    }
+
+    fs::rename(file, &new_file).unwrap_or_else(|_| {
+        panic!(
+            "Cannot move file {:?} to directory {:?}",
+            file.file_name().unwrap(),
+            new_file.as_os_str()
+        )
+    })
 }

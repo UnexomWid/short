@@ -7,14 +7,16 @@
 ```sh
 cargo install --path .
 
+# Run short in the current dir
 ./short
 
-# You can also run it like this to change the working dir,
-# but the config file must be in the current process WD!
-./short <dir>
+# Run short in <working_dir>
+./short <working_dir>
 ```
 
-Short generates a default JSON config file `short.json` which you can modify.
+Short generates a default JSON config file `short.json` if it doesn't exist. Note that short searches for the config in the current working dir.
+
+If you run `./short <working_dir>`, the config file will be `<working_dir>/short.json`.
 
 You can create categories based on file extensions and names.
 
@@ -34,20 +36,24 @@ You can create categories based on file extensions and names.
         }
     },
 
-    // If a file doesn't fit any category given in this config (i.e. is uncategorized), don't move it anywhere;
+    // If an unsorted file is moved, but a file with the same name already exists in the destination, overwrite it
+    // If this is false, short will append numbers to the file name to solve the conflict
+    "auto_overwrite": false,
+
+    // If a file doesn't fit any category above (i.e. is uncategorized), don't move it anywhere;
     // This must be false for the options below to take effect
     "ignore_uncategorized": false,
 
-    // If a file is uncategorized, move it to <uncategorized_dir>/<ext> where <ext> is the file extension;
-    // otherwise, move to <uncategorized_dir>
+    // If a file is uncategorized, move it to <working_dir>/<uncategorized_dir>/<ext> where <ext> is the file extension;
+    // otherwise, move to <working_dir>/<uncategorized_dir>
     "sort_uncategoriezd_by_ext": true,
 
-    // Where to move uncategorized files;
+    // Where to move uncategorized files; relative to <working_dir>
     // If empty, it's the working directory
     "uncategorized_dir": "Other Files",
 
     // Where to move uncategorized files that have no extensions;
-    // This is <uncategorized_dir>/<no_extension_dir>
+    // This is <working_dir>/<uncategorized_dir>/<no_extension_dir>
     "no_extension_dir": "No Extension"
 }
 ```
